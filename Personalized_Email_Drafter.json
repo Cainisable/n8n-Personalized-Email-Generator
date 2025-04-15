@@ -1,0 +1,1261 @@
+{
+  "name": "Personalized Email Drafter",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -860,
+        260
+      ],
+      "id": "f73a315c-1155-4e4e-a6f2-b247c74896a5",
+      "name": "When clicking ‘Test workflow’"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Tfu1kQdP4LLzbin0kMe8RRGZOIyQnDobRmRtCoZLDGQ",
+          "mode": "list",
+          "cachedResultName": "Copy of N8N Trial Project Leads",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Tfu1kQdP4LLzbin0kMe8RRGZOIyQnDobRmRtCoZLDGQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "B2B SaaS Founders",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Tfu1kQdP4LLzbin0kMe8RRGZOIyQnDobRmRtCoZLDGQ/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "status",
+              "lookupValue": "not personalized"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -640,
+        260
+      ],
+      "id": "c4f59fcf-b3b0-4558-88a7-fa731c524847",
+      "name": "Read Lead Data",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "MGlCKPgCQ8B04UDf",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        -380,
+        260
+      ],
+      "id": "a257262a-f837-4a1c-b057-36043e33add6",
+      "name": "Limit"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4O"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "You are networkGPT. Your job is to research a provided company and generate a breakdown with the most essential information.\n\nYou should use web search to research each company. \n\nProvide a detailed summary of the company as a raw paragraph, including what they do, important projects, years in business, etc.",
+              "role": "assistant"
+            },
+            {
+              "content": "=Company:  {{ $json.company_name }}\nCompany Website: {{ $json.company_url }}\nCompany Linkedin:{{ $json.company_linkedin_url }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -160,
+        260
+      ],
+      "id": "9111a11b-2020-4fb9-b09f-6462745684a5",
+      "name": "Get Company Info",
+      "credentials": {
+        "openAiApi": {
+          "id": "Hd2cOauZ4KmGAYEC",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "82637b4d-fc5c-4633-92b3-c505375d8678",
+              "name": "linkedin_url",
+              "value": "=https://{{$('Read Lead Data').item.json.linkedin_url.match(/(?:https?:\\/\\/)?(www\\.linkedin\\.com\\/in\\/[a-zA-Z0-9\\-]+)\\/?/)[1]}}/",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        260
+      ],
+      "id": "5d52b98a-991d-4e82-bc97-a7838db79ef2",
+      "name": "Clean Linkedin URL"
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "dataPropertyName": "Scraped_Linkedin",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "title\t",
+              "cssSelector": "title"
+            },
+            {
+              "key": "headings",
+              "cssSelector": "h1, h2, h3"
+            },
+            {
+              "key": "main_content",
+              "cssSelector": "div#content, main, article, div.content, script[type=\"application/ld+json\"]"
+            },
+            {
+              "key": "paragraphs",
+              "cssSelector": "p"
+            },
+            {
+              "key": "extra",
+              "cssSelector": "description",
+              "returnValue": "html"
+            },
+            {
+              "key": "extra_text",
+              "cssSelector": " script[type=\"application/ld+json\"]"
+            }
+          ]
+        },
+        "options": {
+          "trimValues": true,
+          "cleanUpText": true
+        }
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        1200,
+        460
+      ],
+      "id": "cca8016f-934e-4b5a-bc01-dccb9abb98d5",
+      "name": "HTML1"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4O"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Extract this persons raw professional summary from their scraped linkedin. There is no specific summary section, but their background will be detailed in the text.\n\nLinkedin:\n{{ $json.main_content }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        1460,
+        460
+      ],
+      "id": "fa93bda4-2c9c-4c50-bd00-f88da03631f0",
+      "name": "Professional Background",
+      "credentials": {
+        "openAiApi": {
+          "id": "Hd2cOauZ4KmGAYEC",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6c7b9208-4090-4dc6-ac68-b3309c5ef481",
+              "name": "Background",
+              "value": "=No extra background details recorded.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1860,
+        240
+      ],
+      "id": "8158157b-c499-40bb-9658-5a87ae4d0308",
+      "name": "No Background"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6c7b9208-4090-4dc6-ac68-b3309c5ef481",
+              "name": "Background",
+              "value": "={{ $json.message.content }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1860,
+        460
+      ],
+      "id": "c4654a96-3109-4412-90e2-a02a315a50f3",
+      "name": "Background Scraped"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.error.name }}",
+                    "rightValue": "error",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "d4585b69-5b48-42e3-bc47-38239c1fd3b7"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "ERROR"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "00993201-e507-4554-972f-5f88501e4445",
+                    "leftValue": "={{ $json.error.name }}",
+                    "rightValue": "error",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notContains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Worked"
+            }
+          ]
+        },
+        "options": {
+          "ignoreCase": true
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1000,
+        260
+      ],
+      "id": "1a3f79aa-fdb7-4aed-944e-44c75008fc39",
+      "name": "Scraping Successful?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://prod.0codekit.com/generate/html-scrape",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "auth",
+              "value": "PUT API KEY HERE"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "={{ $json.linkedin_url }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "17563757-99ff-4270-a393-970554cb3afc",
+      "name": "Scrape Professional Linkedin",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        500,
+        260
+      ],
+      "typeVersion": 4.1,
+      "executeOnce": false,
+      "retryOnFail": true,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6c7b9208-4090-4dc6-ac68-b3309c5ef481",
+              "name": "Background",
+              "value": "={{ $json.Background }}",
+              "type": "string"
+            },
+            {
+              "id": "f0e5bbe7-a271-45b3-a020-003455a2577c",
+              "name": "Company_Info",
+              "value": "={{ $('Scraping Successful?').item.json.Company_Info }}",
+              "type": "string"
+            },
+            {
+              "id": "70f15aff-0a87-41dd-8dfb-e9074323bbfa",
+              "name": "Job_Title",
+              "value": "={{ $('Scraping Successful?').item.json.Job_Title }}",
+              "type": "string"
+            },
+            {
+              "id": "8df5a944-df80-4af1-9f28-b8547ebf5d03",
+              "name": "Linkedin_Headline",
+              "value": "={{ $('Scraping Successful?').item.json.Linkedin_Headline }}",
+              "type": "string"
+            },
+            {
+              "id": "6353ca27-a48a-4e0c-a015-7e7d68621c2e",
+              "name": "is_likely_to_engage",
+              "value": "={{ $('Scraping Successful?').item.json.is_likely_to_engage }}",
+              "type": "boolean"
+            },
+            {
+              "id": "d422970b-6c58-4083-a728-509e4e62751a",
+              "name": "full_name",
+              "value": "={{ $('Scraping Successful?').item.json.full_name }}",
+              "type": "string"
+            },
+            {
+              "id": "b0223058-6b82-47b3-b4f2-dcfa975e9eae",
+              "name": "email",
+              "value": "={{ $('Scraping Successful?').item.json.email }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2080,
+        340
+      ],
+      "id": "d5f24d8a-273f-4fd5-aca0-2acd7e92b015",
+      "name": "Record Info"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6c7b9208-4090-4dc6-ac68-b3309c5ef481",
+              "name": "Scraped_Linkedin",
+              "value": "={{ $json.data }}",
+              "type": "string"
+            },
+            {
+              "id": "f0e5bbe7-a271-45b3-a020-003455a2577c",
+              "name": "Company_Info",
+              "value": "={{ $('Get Company Info').item.json.message.content }}",
+              "type": "string"
+            },
+            {
+              "id": "70f15aff-0a87-41dd-8dfb-e9074323bbfa",
+              "name": "Job_Title",
+              "value": "={{ $('Read Lead Data').item.json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "8df5a944-df80-4af1-9f28-b8547ebf5d03",
+              "name": "Linkedin_Headline",
+              "value": "={{ $('Read Lead Data').item.json.headline }}",
+              "type": "string"
+            },
+            {
+              "id": "6353ca27-a48a-4e0c-a015-7e7d68621c2e",
+              "name": "is_likely_to_engage",
+              "value": "={{ $('Read Lead Data').item.json.is_likely_to_engage }}",
+              "type": "boolean"
+            },
+            {
+              "id": "4ad27e03-dbf4-4495-b393-d5dc3213f84e",
+              "name": "full_name",
+              "value": "={{ $('Read Lead Data').item.json.full_name }}",
+              "type": "string"
+            },
+            {
+              "id": "3a38ad11-c246-4229-bb8c-bb21bf9ba41b",
+              "name": "email",
+              "value": "={{ $('Read Lead Data').item.json.email }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        760,
+        260
+      ],
+      "id": "01dd7b08-5ab9-4211-a0ec-5cae91f34216",
+      "name": "Record Needed Info"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4O"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are networkingGPT. Your job is to draft a personalized sales email to a professional. \n\nI will provide you with information about the professional and their company.\n\nUsing this, draft a relevant personalized email. The professional is likely to engage with our communication so we should be more forward. \n\nOur company is an AI services company that sells automated solutions to save time and make it easier for businesses to scale. Our company name is SmartscalingAI. My name is Adam Cain.\n\nCompany Info:\n{{ $json.Company_Info }}\n\nProfessional's Name:\n{{ $json.full_name }}\n\nProfessional's Job Title:\n{{ $json.Job_Title }}\n\nProfessional's Linkedin Headline:\n{{ $json.Linkedin_Headline }}\n\nProfessional Background:\n{{ $json.Background }}\n\nReturn the output in the following format:\n\nEmail Subject:\nSUBJECT\n\nEmail Body:\nBODY",
+              "role": "assistant"
+            },
+            {}
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        2560,
+        500
+      ],
+      "id": "be40892b-c4d6-43e8-964e-8c295708757d",
+      "name": "Draft the Targeted Email (Warm)",
+      "credentials": {
+        "openAiApi": {
+          "id": "Hd2cOauZ4KmGAYEC",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4O"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are networkingGPT. Your job is to draft a personalized sales email to a professional. \n\nI will provide you with information about the professional and their company.\n\nUsing this, draft a relevant personalized email. The professional is unlikely to engage with our communication so we should be more conservative. \n\nOur company is an AI services company that sells automated solutions to save time and make it easier for businesses to scale. Our company name is SmartscalingAI. My name is Adam Cain.\n\nCompany Info:\n{{ $json.Company_Info }}\n\nProfessional's Name:\n{{ $json.full_name }}\n\nProfessional's Job Title:\n{{ $json.Job_Title }}\n\nProfessional's Linkedin Headline:\n{{ $json.Linkedin_Headline }}\n\nProfessional Background:\n{{ $json.Background }}\n\nReturn the output in the following format:\n\nEmail Subject:\nSUBJECT\n\nEmail Body:\nBODY",
+              "role": "assistant"
+            },
+            {}
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        2560,
+        240
+      ],
+      "id": "69333f15-7422-4b3a-ac68-6c800edd8528",
+      "name": "Draft the Targeted Email (Cold)",
+      "credentials": {
+        "openAiApi": {
+          "id": "Hd2cOauZ4KmGAYEC",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.is_likely_to_engage }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "false",
+                      "singleValue": true
+                    },
+                    "id": "e4266510-8d68-4910-a4f3-c7eb15185136"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Unlikely to Engage"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "58b272ac-fb18-47df-95b2-0d6f2e2312bb",
+                    "leftValue": "={{ $json.is_likely_to_engage }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Likely to Engage"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": 0
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        2280,
+        340
+      ],
+      "id": "1726d90c-7df1-4d59-8fe9-97f16b502775",
+      "name": "Likely to Engage?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "dce503ce-4f18-4158-8965-c82c52580adf",
+              "name": "message.content['Email Subject']",
+              "value": "={{ $json.message.content['Email Subject'] }}",
+              "type": "string"
+            },
+            {
+              "id": "30c0a986-b6a6-4062-9255-b398c4fcd524",
+              "name": "message.content['Email Body']",
+              "value": "={{ $json.message.content['Email Body'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2980,
+        380
+      ],
+      "id": "aacfe202-4812-4102-bbd4-83b5d08adb35",
+      "name": "Email"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1Tfu1kQdP4LLzbin0kMe8RRGZOIyQnDobRmRtCoZLDGQ",
+          "mode": "list",
+          "cachedResultName": "Copy of N8N Trial Project Leads",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Tfu1kQdP4LLzbin0kMe8RRGZOIyQnDobRmRtCoZLDGQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "B2B SaaS Founders",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Tfu1kQdP4LLzbin0kMe8RRGZOIyQnDobRmRtCoZLDGQ/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "personalized",
+            "AI Email Subject": "={{ $json.message.content['Email Subject'] }}",
+            "AI Email Body": "={{ $json.message.content['Email Body'] }}",
+            "email": "={{ $('Likely to Engage?').item.json.email }}"
+          },
+          "matchingColumns": [
+            "email"
+          ],
+          "schema": [
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI Email Subject",
+              "displayName": "AI Email Subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI Email Body",
+              "displayName": "AI Email Body",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI message",
+              "displayName": "AI message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "first_name",
+              "displayName": "first_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "last_name",
+              "displayName": "last_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "full_name",
+              "displayName": "full_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email_status",
+              "displayName": "email_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_name",
+              "displayName": "company_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_url",
+              "displayName": "company_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_domain",
+              "displayName": "company_domain",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_linkedin_url",
+              "displayName": "company_linkedin_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "linkedin_url",
+              "displayName": "linkedin_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "headline",
+              "displayName": "headline",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "country",
+              "displayName": "country",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "state",
+              "displayName": "state",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "city",
+              "displayName": "city",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "estimated_num_employees",
+              "displayName": "estimated_num_employees",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "phone_number",
+              "displayName": "phone_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sanitized_phone_number",
+              "displayName": "sanitized_phone_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "seniority",
+              "displayName": "seniority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "industry",
+              "displayName": "industry",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "secondary_industries",
+              "displayName": "secondary_industries",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "industries",
+              "displayName": "industries",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "functions",
+              "displayName": "functions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "departments",
+              "displayName": "departments",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "subdepartments",
+              "displayName": "subdepartments",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "keywords",
+              "displayName": "keywords",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "is_likely_to_engage",
+              "displayName": "is_likely_to_engage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        3200,
+        380
+      ],
+      "id": "74fb5329-47cd-49bc-9755-1e2644948110",
+      "name": "Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "MGlCKPgCQ8B04UDf",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "In order to scrape, you must get an API key for 0codekit (free to try):\n\nhttps://my.0codekit.com/en/dashboard/account",
+        "height": 100,
+        "width": 340
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        380,
+        120
+      ],
+      "typeVersion": 1,
+      "id": "ecc67947-2aa1-4903-944d-1b25a53bc9b0",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## SCRAPING THE PERSONAL LINKEDIN",
+        "height": 600,
+        "width": 1040,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        980,
+        40
+      ],
+      "typeVersion": 1,
+      "id": "5bfd47ef-5e68-40f1-9691-b0cefcc72669",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Generate the Personalized Email",
+        "height": 700,
+        "width": 400,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2500,
+        0
+      ],
+      "typeVersion": 1,
+      "id": "aee52766-011a-4e39-a6da-5ed734e3efc1",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## Company Research",
+        "height": 340,
+        "width": 360,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -180,
+        160
+      ],
+      "typeVersion": 1,
+      "id": "d4c9dcb7-af86-48c8-9964-d92a9ee1ff51",
+      "name": "Sticky Note3"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Read Lead Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Lead Data": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "Get Company Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Company Info": {
+      "main": [
+        [
+          {
+            "node": "Clean Linkedin URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean Linkedin URL": {
+      "main": [
+        [
+          {
+            "node": "Scrape Professional Linkedin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML1": {
+      "main": [
+        [
+          {
+            "node": "Professional Background",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Professional Background": {
+      "main": [
+        [
+          {
+            "node": "Background Scraped",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No Background": {
+      "main": [
+        [
+          {
+            "node": "Record Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Background Scraped": {
+      "main": [
+        [
+          {
+            "node": "Record Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scraping Successful?": {
+      "main": [
+        [
+          {
+            "node": "No Background",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTML1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scrape Professional Linkedin": {
+      "main": [
+        [
+          {
+            "node": "Record Needed Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record Needed Info": {
+      "main": [
+        [
+          {
+            "node": "Scraping Successful?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record Info": {
+      "main": [
+        [
+          {
+            "node": "Likely to Engage?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Likely to Engage?": {
+      "main": [
+        [
+          {
+            "node": "Draft the Targeted Email (Cold)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Draft the Targeted Email (Warm)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Draft the Targeted Email (Warm)": {
+      "main": [
+        [
+          {
+            "node": "Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Draft the Targeted Email (Cold)": {
+      "main": [
+        [
+          {
+            "node": "Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "b3886494-0c9b-4333-85ba-9ad42f228966",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "325953a2255cd39c88075576d84ecfc550d5470afbff0779b71b13b7355b6afc"
+  },
+  "id": "TZDUmNd7QIKPDtOz",
+  "tags": []
+}
